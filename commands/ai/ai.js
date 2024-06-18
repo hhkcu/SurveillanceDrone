@@ -21,17 +21,17 @@ module.exports = {
 		.setName('ai')
 		.setDescription('talk with ai')
         .addStringOption(option => option.setName("prompt").setDescription("yap yap yap").setRequired(true))
-        .addStringOption(option => option.setName("systemprompt").setDescription("yap but more important")),
+        .addStringOption(option => option.setName("systemprompt").setDescription("precise instructions"))
+		.addNumberOption(option => option.setName("temperature").setDescription("how crazy the ai is")),
 	async execute(interaction) {
-	
         const prompt = interaction.options.getString("prompt");
         const canSaySlurs = interaction.guildId !== "1039844753665163264";
         const sysPrompt = interaction.options.getString("systemprompt") || (canSaySlurs ? defaultPrompts.SlursAllowed(interaction) : defaultPrompts.SlursNotAllowed(interaction));
-        const llm = new LLM(sysPrompt);
-	const usern = interaction.user.username;
-	await interaction.deferReply();
-	const savedfilename = `${process.cwd()}/logs/${interaction.channelId}-llm.log`;
-        const message = await converseFromFile(savedfilename, sysPrompt, prompt, LLMModels.dolphin_mixtral_8x7b, 1, 512, usern);
-	await interaction.editReply(message);
+		const temp = interaction.options.getNumber("temperature") || 0.85;
+		const usern = interaction.user.username;
+		await interaction.deferReply();
+		const savedfilename = `${process.cwd()}/logs/${interaction.channelId}-llm.log`;
+        const message = await converseFromFile(savedfilename, sysPrompt, prompt, LLMModels.dolphin_mixtral_8x7b, temp, 512, usern);
+		await interaction.editReply(message);
 	},
 };
