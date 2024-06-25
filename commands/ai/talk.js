@@ -7,7 +7,7 @@ async function converseFromFile(filep, sysp, p, t, mt, up) {
 	let llm;
 	if (fs.existsSync(filep)) {
 		const serialized = fs.readFileSync(filep, "utf8");
-		llm = (new LLM()).fromSerialized(serialized);
+		llm = LLM.fromSerialized(serialized);
 	} else {llm=new LLM(sysp);}
 	llm.recordPastMessages = true;
 	const msg = (await llm.createCompletion(p, t, mt, up));

@@ -1,12 +1,12 @@
 import * as fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
+import { Client, Collection, Events, GatewayIntentBits, Typing } from "discord.js";
 
 import "dotenv/config"
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages], partials: ["MESSAGES", "CHANNEL", "REACTION"] });
 client.commands = new Collection();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,10 +26,51 @@ for (const folder of commandFolders) {
         // Set a new item in the Collection with the key as the command name and the value as the exported module
         if ('data' in command && 'execute' in command) {
             client.commands.set(command.data.name, command);
+			if ('refreshDebounce' in command) {
+				setInterval(command.refresh, command.refreshDebounce);
+				client.commands.set(command.data.name, command);
+			}
         } else {
             console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
         }
     }
+}
+
+async function startTyping(channel) {
+	const ti = new Typing(channel, client.user, {
+		timestamp: Date.now() / 1000
+	});
+	await client.emit(Events.TypingStart, ti);
+}
+
+const threadListeners = {};
+client.on("messageCreate", async (message) => {
+	console.log(message.channelId);
+	if (message.author.bot) return;
+	if (threadListeners[message.channelId]) {
+		const val = threadListeners[message.channelId];
+		console.log("creating result for message "+message.cleanContent);
+		startTyping(message.channel);
+		const inferred = await val.model.createCompletion(message.cleanContent);
+		message.reply(inferred.content);
+	}
+})
+
+function ParseCommandReturn(returned) {
+	switch (returned.method) {
+		case "AddThreadResponderAI":
+			console.log(`Created a thread listener for ID ${returned.data.id}`);
+			threadListeners[returned.data.id] = returned.data;
+			break;
+		case "RemoveThreadResponderAI":
+			delete threadListeners[returned.data.id];
+			break;
+		case "RunThreadListenerMethod":
+			threadListeners[returned.data.id].model[returned.data.method](...returned.data.args);
+		default:
+			console.log(`Command method ${returned.method} does not exist.`);
+			return;
+	}
 }
 
 client.on(Events.InteractionCreate, async interaction => {
@@ -43,7 +84,10 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 
 	try {
-		await command.execute(interaction);
+		const returnResult = await command.execute(interaction);
+		if (returnResult) {
+			ParseCommandReturn(returnResult);
+		}
 	} catch (error) {
 		console.error(error);
 		if (interaction.replied || interaction.deferred) {
