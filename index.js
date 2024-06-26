@@ -2,8 +2,18 @@ import * as fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, Collection, Events, GatewayIntentBits, Typing } from "discord.js";
+import { execSync } from "node:child_process";
 
 import "dotenv/config"
+
+console.log("initializing proxies");
+
+execSync("node --version", {
+	stdio: "inherit"
+});
+
+execSync("node initProxies.js", {stdio:"inherit"});
+execSync("node deploycmds.js", {stdio:"inherit"});
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages], partials: ["MESSAGES", "CHANNEL", "REACTION"] });
@@ -45,13 +55,10 @@ async function startTyping(channel) {
 
 const threadListeners = {};
 client.on("messageCreate", async (message) => {
-	console.log(message.channelId);
 	if (message.author.bot) return;
 	if (threadListeners[message.channelId]) {
 		const val = threadListeners[message.channelId];
-		console.log("creating result for message "+message.cleanContent);
-		startTyping(message.channel);
-		const inferred = await val.model.createCompletion(message.cleanContent);
+		const inferred = await val.model.createCompletion(`[${message.author.username} (${message.author.id})] ${message.content}`);
 		message.reply(inferred.content);
 	}
 })
