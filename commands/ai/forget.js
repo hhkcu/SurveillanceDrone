@@ -7,5 +7,5 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
 	interaction.reply("reset conversation");
-    return {method: "RunThreadListenerMethod", data: {id: interaction.channelId, method: "wipe", args: []}};
+    //return {method: "RunThreadListenerMethod", data: {id: interaction.channelId, method: "wipe", args: []}};
 }

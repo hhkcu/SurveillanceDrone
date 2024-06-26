@@ -7,5 +7,5 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
 	interaction.reply("this session has closed");
-    return {method: "RemoveThreadListenerAI", data: {id: interaction.channelId}};
+    return {method: "RemoveThreadResponderAI", data: {id: interaction.channelId}};
 }

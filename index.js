@@ -66,7 +66,8 @@ function ParseCommandReturn(returned) {
 			delete threadListeners[returned.data.id];
 			break;
 		case "RunThreadListenerMethod":
-			threadListeners[returned.data.id].model[returned.data.method](...returned.data.args);
+			console.log(returned.data.method);
+			(threadListeners[returned.data.id].model[returned.data.method])(...returned.data.args);
 		default:
 			console.log(`Command method ${returned.method} does not exist.`);
 			return;
