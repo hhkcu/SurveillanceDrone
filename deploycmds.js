@@ -6,9 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import {config} from "dotenv";
-config();
-
+import "dotenv/config";
 const commands = [];
 // Grab all the command folders from the commands directory you created earlier
 const foldersPath = path.join(__dirname, 'commands');
@@ -23,7 +21,10 @@ for (const folder of commandFolders) {
 		const filePath = path.join(commandsPath, file);
 		const command = await import(pathToFileURL(filePath));
 		if ('data' in command && 'execute' in command) {
-			commands.push(command.data.toJSON());
+			const json = command.data.toJSON();
+			json.contexts = [0, 1, 2];
+			json.integration_types = [0, 1];
+			commands.push(json);
 		} else {
 			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
 		}

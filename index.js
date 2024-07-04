@@ -6,13 +6,6 @@ import { execSync } from "node:child_process";
 
 import "dotenv/config"
 
-console.log("initializing proxies");
-
-execSync("node --version", {
-	stdio: "inherit"
-});
-
-execSync("node initProxies.js", {stdio:"inherit"});
 execSync("node deploycmds.js", {stdio:"inherit"});
 
 // Create a new client instance

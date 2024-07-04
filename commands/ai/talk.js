@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder } from "@discordjs/builders";
 import { LLM } from "../../lib/llm.js";
 import * as defaultPrompts from "../../lib/prompts.js";
 import fs from "node:fs";

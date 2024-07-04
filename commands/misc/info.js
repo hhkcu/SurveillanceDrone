@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder } from "@discordjs/builders";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 

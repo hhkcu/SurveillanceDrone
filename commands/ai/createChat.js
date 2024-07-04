@@ -58,7 +58,7 @@ function createNewPrompt(promptTemplate, interaction) {
 export let data = new SlashCommandBuilder()
     .setName('createchat')
     .setDescription('create a conversation thread')
-    .addStringOption(option => option.setName("character").setDescription("the character to talk to"))
+    .addStringOption(option => option.setName("character").setDescription("the character to talk to"));
 
 
 
