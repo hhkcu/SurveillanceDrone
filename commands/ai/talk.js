@@ -31,6 +31,6 @@ export async function execute(interaction) {
 	const usern = interaction.user.username;
 	await interaction.deferReply();
 	const savedfilename = `${process.cwd()}/logs/${interaction.channelId}-llm.log`;
-	const message = await converseFromFile(savedfilename, sysPrompt, prompt, temp, 512, usern);
-	await interaction.editReply(message.substring(0, Math.min(2000, message.length)));
+	const message = await converseFromFile(savedfilename, sysPrompt, prompt, temp, 512, usern); 
+	await interaction.editReply(message.substring(0, Math.min(2000, message.length)).replace("|", "i"));
 }
