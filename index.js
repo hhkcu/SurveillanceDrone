@@ -9,7 +9,7 @@ import "dotenv/config"
 execSync("node deploycmds.js", {stdio:"inherit"});
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages], partials: ["MESSAGES", "CHANNEL", "REACTION"] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["MESSAGES", "CHANNEL", "REACTION"] });
 client.commands = new Collection();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -51,6 +51,7 @@ client.on("messageCreate", async (message) => {
 	if (message.author.bot) return;
 	if (threadListeners[message.channelId]) {
 		const val = threadListeners[message.channelId];
+		console.log(message.content);
 		const inferred = await val.model.createCompletion(`[${message.author.username} (${message.author.id})] ${message.content}`);
 		message.reply(inferred.content);
 	}
