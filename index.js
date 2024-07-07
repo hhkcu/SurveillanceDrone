@@ -1,4 +1,4 @@
-import * as fs from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, Collection, Events, GatewayIntentBits, Typing } from "discord.js";
@@ -9,7 +9,7 @@ import "dotenv/config"
 execSync("node deploycmds.js", {stdio:"inherit"});
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages], partials: ["MESSAGES", "CHANNEL", "REACTION"] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["MESSAGES", "CHANNEL", "REACTION"] });
 client.commands = new Collection();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -51,8 +51,9 @@ client.on("messageCreate", async (message) => {
 	if (message.author.bot) return;
 	if (threadListeners[message.channelId]) {
 		const val = threadListeners[message.channelId];
+		console.log(message.content);
 		const inferred = await val.model.createCompletion(`[${message.author.username} (${message.author.id})] ${message.content}`);
-		message.reply(inferred.content);
+		message.reply(inferred.content.substring(0, Math.min(2000, inferred.content.length)));
 	}
 })
 

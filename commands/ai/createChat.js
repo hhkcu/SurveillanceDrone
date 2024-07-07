@@ -1,9 +1,9 @@
 import { SlashCommandBuilder, ThreadAutoArchiveDuration } from "discord.js";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
 import { LLM } from "../../lib/llm.js";
-import { createRequire } from "node:module";
+import Datastore from "nedb";
+
+const db = new Datastore({ filename: 'charactersdb' });
+db.loadDatabase();
 
 const template = `You now roleplay as this character. You do nothing but roleplay as this character.
 In no circumstances, you break roleplaying or character.
@@ -28,22 +28,17 @@ This will be in the format "[username (userid)] message".
 You can ping a user (capture attention) by saying "<@userid>", with the userid being the one in the metadata.
 `
 
-function generateChoices() {
-    const choices = [];
-    const chars = fs.readdirSync(`${process.cwd()}/characters`);
-    chars.forEach(filen => {
-        const p = path.parse(filen);
-        const b = p.base;
-        const n = p.name;
-        choices.push({name: n, value: b});
-    })
-    console.log(choices)
-    return choices;
-}
-
-const require = createRequire(import.meta.url);
+let userinfoAlone = `
+In every messsge you get, there will be metadats about who is speaking to you.
+This is in the format "[usernane (userid)] message"
+You can get a user's attention by "pinging" them, by saying "<@userid>", userid being of course the user id of the user you want to ping.
+`
 
 function createNewPrompt(promptTemplate, interaction) {
+    if (promptTemplate.customSystem && promptTemplate.customSystem !== "__none") {
+       let z = promptTemplate.customSystem + userinfoAlone;
+       return z;
+    }
     let np = template;
     np = np.replace("[name]", promptTemplate.name);
     np = np.replace("[age]", promptTemplate.age);
@@ -60,27 +55,32 @@ export let data = new SlashCommandBuilder()
     .setDescription('create a conversation thread')
     .addStringOption(option => option.setName("character").setDescription("the character to talk to"));
 
-
+function findChar(name) {
+    return new Promise((resolve, reject) => {
+        db.find({ name: name }, (err, doc) => {
+            if (err) reject(err);
+            resolve(doc);
+        })
+    });
+}
 
 export async function execute(interaction) {
     const char = interaction.options.getString("character") || "default";
-    const charFile = `${process.cwd()}/characters/${char}.json`;
-    console.log(charFile);
-    if (!fs.existsSync(charFile)) {
-        await interaction.reply("character not found");
-        return;
+    const charData = await findChar(char);
+    if (!charData || charData.length === 0) {
+        return await interaction.reply("Character not found.");
     }
-    let cdata = require(charFile);
+    const cData = charData[0];
     const thread = await interaction.channel.threads.create({
-        name: `Conversation with ${cdata.name}`,
+        name: `Conversation with ${cData.name}`,
         autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
         reason: "Roleplay with a character!"
     })
-    const prompt = createNewPrompt(cdata, interaction);
+    const prompt = createNewPrompt(cData, interaction);
     const aimodel = new LLM(prompt);
     await thread.join();
     await thread.members.add(interaction.user.id);
-    await thread.send(`This is a conversation between <@${interaction.user.id}> and ${cdata.name}.`);
+    await thread.send(`This is a conversation between <@${interaction.user.id}> and ${cData.name}.`);
     await interaction.reply("Created conversation successfully.");
-    return {method: "AddThreadResponderAI", data: {id: thread.id, model: aimodel}}
+    return {method: "AddThreadResponderAI", data: {id: thread.id, model: aimodel}};
 }
