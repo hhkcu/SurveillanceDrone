@@ -1,8 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import fs from "node:fs";
-import Datastore from "nedb";
-const db = new Datastore({ filename: 'charactersdb' })
-db.loadDatabase();
+import { DB } from "../../lib/db.js";
 
 export const data = new SlashCommandBuilder()
 .setName('createchar')
@@ -30,6 +28,6 @@ export async function execute(interaction) {
 	    customSystem: cpifany || "none",
         creator: interaction.user.username
     }
-    db.insert(char);
+    DB.insert(char);
     await interaction.reply(`Created character ${name}.`);
 }

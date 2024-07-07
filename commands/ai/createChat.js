@@ -1,10 +1,6 @@
 import { SlashCommandBuilder, ThreadAutoArchiveDuration } from "discord.js";
 import { LLM } from "../../lib/llm.js";
-import Datastore from "nedb";
-
-const db = new Datastore({ filename: 'charactersdb' });
-db.loadDatabase();
-
+import { DB } from "../../lib/db.js";
 const template = `You now roleplay as this character. You do nothing but roleplay as this character.
 In no circumstances, you break roleplaying or character.
 
@@ -57,7 +53,7 @@ export let data = new SlashCommandBuilder()
 
 function findChar(name) {
     return new Promise((resolve, reject) => {
-        db.find({ name: name }, (err, doc) => {
+        DB.find({ name: name }, (err, doc) => {
             if (err) reject(err);
             resolve(doc);
         })
