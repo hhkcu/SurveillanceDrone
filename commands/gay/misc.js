@@ -12,7 +12,7 @@ export async function execute(interaction) {
         case "sysinfo": {
             await interaction.deferReply();
             const proc = spawnSync("fastfetch", ["--pipe", "-l", "none", "--cpu-temp"], {encoding:"utf-8"});
-            await interaction.editReply(`\`\`\`\n${proc.stdout.replace("█", "")}\n\`\`\``); // remove color bar fix
+            await interaction.editReply(`\`\`\`\n${proc.stdout.replace(/█/g, "")}\n\`\`\``); // remove color bar fix
             break;
         }
         default: break;

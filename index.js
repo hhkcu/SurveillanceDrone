@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { Client, Collection, Events, GatewayIntentBits, Typing } from "discord.js";
+import { ActivityType, Client, Collection, Events, GatewayIntentBits, Typing } from "discord.js";
 import { execSync } from "node:child_process";
 
 import "dotenv/config"
@@ -100,8 +100,61 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 });
 
-client.once(Events.ClientReady, readyClient => {
+const activities = [
+	ActivityType.Competing,
+	ActivityType.Playing,
+	ActivityType.Streaming,
+	ActivityType.Watching,
+	ActivityType.Listening
+]
+
+const activityStrings = {
+	5: "competing",
+	0: "playing",
+	1: "streaming",
+	3: "watching",
+	2: "listening"
+}
+
+const presences = [
+	"idle",
+	"dnd",
+	"online"
+]
+
+const activityStringsVal = {};
+
+activities.forEach(e => {
+	const json = JSON.parse(fs.readFileSync(`quotes/${activityStrings[e]}.json`, {encoding:"utf-8"}));
+	activityStringsVal[activityStrings[e]] = json;
+})
+
+const funcRg = /\[([A-Za-z0-9]+)\(([^)]*)\)\]/g;
+
+function randomInt(min, max) {
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+client.once(Events.ClientReady, async readyClient => {
 	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+	
+	setInterval(() => {
+		const activity = activities[Math.floor(Math.random() * activities.length)]
+		const activityStr = activityStrings[activity];
+		const strings = activityStringsVal[activityStr];
+		const str = strings[Math.floor(Math.random() * strings.length)];
+		const evaluated = str.replace(funcRg, (match, funcName, args) => {
+			switch(funcName) {
+				case "randomInt":
+					let [min, max] = args.split(",").map(Number);
+					return randomInt(min, max);
+				default:
+					return match;
+			}
+		})
+		readyClient.user.setActivity(evaluated, { type: activity });
+		readyClient.user.setPresence({ status: presences[Math.floor(Math.random() * presences.length)] });
+	}, 25000);
 });
 
 // Log in to Discord with your client's token
