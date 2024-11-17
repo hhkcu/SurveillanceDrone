@@ -2,11 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { ActivityType, Client, Collection, Events, GatewayIntentBits, Typing } from "discord.js";
-import { execSync } from "node:child_process";
+import { exec, execSync } from "node:child_process";
+import { AITestKitchen } from "./lib/atk.js";
 
 import "dotenv/config"
 
 execSync("node deploycmds.js", {stdio:"inherit"});
+
+process.env.MUSICFX_KEY = await AITestKitchen.getToken();
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent], partials: ["MESSAGES", "CHANNEL", "REACTION"] });
@@ -101,7 +104,6 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 const activities = [
-	ActivityType.Competing,
 	ActivityType.Playing,
 	ActivityType.Streaming,
 	ActivityType.Watching,
@@ -109,7 +111,6 @@ const activities = [
 ]
 
 const activityStrings = {
-	5: "competing",
 	0: "playing",
 	1: "streaming",
 	3: "watching",

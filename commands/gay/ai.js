@@ -1,8 +1,21 @@
 import { SlashCommandBuilder, AttachmentBuilder } from "discord.js";
 import { MusicFX } from "../../lib/musicfx.js";
 import { ImageFX } from "../../lib/imagefx.js";
-import { SDXL } from "../../lib/sdxl-deepinfra.js";
+import { FluxApi, FluxAspectRatioChoices } from "../../lib/flux.js";
+import { AsyncQueue } from "../../lib/util.js";
 import { randomUUID } from "node:crypto";
+import path from "node:path";
+
+function genChoices(arr) {
+    const arr2 = []
+    arr.forEach(v => {
+        arr2.push({
+            name: v,
+            value: v
+        })
+    })
+    return arr2;
+}
 
 export const data = new SlashCommandBuilder()
 .setName('ai')
@@ -28,9 +41,20 @@ export const data = new SlashCommandBuilder()
     .addIntegerOption(opt => opt.setName("images").setDescription("How many images to generate").setMinValue(1).setMaxValue(5))
 )
 .addSubcommand(sc =>
-    sc.setName("sdxl").setDescription("Generate images using Stable Diffusion XL (provided by DeepInfra)")
+    sc.setName("flux-ultra").setDescription("Generate images using Flux 1.1 Ultra")
     .addStringOption(opt => opt.setName("prompt").setDescription("Prompt").setRequired(true))
+    .addStringOption(opt => opt.setName("aspect").setDescription("Aspect Ratio").setRequired(true).setChoices(genChoices(FluxAspectRatioChoices)))
+    .addBooleanOption(opt => opt.setName("raw").setDescription("Use raw mode").setRequired(false))
 );
+
+let flux;
+
+if (path.basename(process.argv[1]) !== "deploycmds.js") {
+    flux = new FluxApi();
+    await flux.init();
+}
+
+const fluxQueue = new AsyncQueue()
 
 export async function execute(interaction) {
     const subCommand = interaction.options.getSubcommand(true);
@@ -71,17 +95,25 @@ export async function execute(interaction) {
             });
             break;
         }
-        case "sdxl": {
+        case "flux-ultra": {
             const prompt = interaction.options.getString("prompt");
+            const aspect = interaction.options.getString("aspect");
+            const isRaw = interaction.options.getBoolean("raw") || false;
             await interaction.deferReply();
-            const image = await SDXL.runInference(prompt);
-            if (typeof image === "string") {
-                await interaction.editReply(image);
+            let image;
+            await fluxQueue.push(async () => {
+                image = await flux.generate(prompt, isRaw, aspect);
+            }, async report => {
+                const { position, status } = report;
+                await interaction.editReply(`Queue position: ${position}\nStatus: ${status}`);
+            });
+            if (Buffer.isBuffer(image) == false) {
+                await interaction.editReply(`Error occured while generating image: ${image}`);
                 break;
             }
             await interaction.editReply({
                 files: [
-                    new AttachmentBuilder(image, {name: `sdxl-${randomUUID()}.png`})
+                    new AttachmentBuilder(image, {name: `flux-${randomUUID()}.png`})
                 ]
             });
             break;
